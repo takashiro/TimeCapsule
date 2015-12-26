@@ -17,6 +17,10 @@ import java.util.List;
  */
 public class MapDB {
 
+    private static final String DATA_SITE = "http://api.map.baidu.com/geodata/v3/";
+
+    private static final String SEARCH_SITE = "http://api.map.baidu.com/geosearch/v3/";
+
     private static final String BAIDU_AK = "qMw4Cb8iqoK7DD92nZfLfy2V";
 
     private static final String GEOTABLE_ID = "129945";
@@ -38,22 +42,22 @@ public class MapDB {
     private static void post(final BDLocation location, final String type, final String text) {
         if (location == null) return;
 
-        List<NameValuePair> params = new ArrayList<NameValuePair>();
-        params.add(new BasicNameValuePair("title", "test"));
-        params.add(new BasicNameValuePair("latitude", Double.toString(location.getLatitude())));
-        params.add(new BasicNameValuePair("longitude", Double.toString(location.getLongitude())));
-        params.add(new BasicNameValuePair("coord_type", "1"));
-        params.add(new BasicNameValuePair("geotable_id", GEOTABLE_ID));
-        params.add(new BasicNameValuePair("ak", BAIDU_AK));
+        NameValueList params = new NameValueList();
+        params.addPair("title", "test");
+        params.addPair("latitude", Double.toString(location.getLatitude()));
+        params.addPair("longitude", Double.toString(location.getLongitude()));
+        params.addPair("coord_type", "1");
+        params.addPair("geotable_id", GEOTABLE_ID);
+        params.addPair("ak", BAIDU_AK);
 
         if (type == TYPE_MESSAGE) {
-            params.add(new BasicNameValuePair("message", text));
-            params.add(new BasicNameValuePair("post_type", TYPE_MESSAGE));
+            params.addPair("message", text);
+            params.addPair("post_type", TYPE_MESSAGE);
         } else {
-            params.add(new BasicNameValuePair("post_type", TYPE_AUDIO));
+            params.addPair("post_type", TYPE_AUDIO);
         }
 
-        HttpUtil.post("poi/create", params, new HttpCallbackListener() {
+        HttpUtil.post(DATA_SITE, "poi/create", params, new HttpCallbackListener() {
             @Override
             public void onFinished(String response) {
                 Log.w("BaiduLBS", response);
@@ -79,15 +83,49 @@ public class MapDB {
     }
 
     public static void getRowById(final int id, final RowQueryListener listener) {
-        List<NameValuePair> params = new ArrayList<NameValuePair>();
-        params.add(new BasicNameValuePair("id", Integer.toString(id)));
-        params.add(new BasicNameValuePair("geotable_id", GEOTABLE_ID));
-        params.add(new BasicNameValuePair("ak", BAIDU_AK));
+        NameValueList params = new NameValueList();
+        params.addPair("id", Integer.toString(id));
+        params.addPair("geotable_id", GEOTABLE_ID);
+        params.addPair("ak", BAIDU_AK);
 
-        HttpUtil.get("poi/detail", params, new HttpCallbackListener() {
+        HttpUtil.get(DATA_SITE, "poi/detail", params, new HttpCallbackListener() {
             @Override
             public void onFinished(String response) {
                 Log.w("PreQuery", response);
+                try {
+                    JSONObject object = new JSONObject(response);
+                    if (object.getInt("status") == 0 && listener != null) {
+                        listener.onGet(response);
+                    }
+                } catch (Exception e) {
+
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+
+            }
+        });
+    }
+
+    public static void getNearbyPosts(final BDLocation location, final RowQueryListener listener) {
+        NameValueList params = new NameValueList();
+        params.setEncoded(true);
+        params.addPair("geotable_id", GEOTABLE_ID);
+        params.addPair("ak", BAIDU_AK);
+        String latitude = Double.toString(location.getLatitude());
+        String longitude = Double.toString(location.getLongitude());
+
+        Log.w("location", latitude + "," + longitude);
+        params.addPair("location", latitude + "," + longitude);
+        params.addPair("radius", "10");
+        params.addPair("sortby", "disapper_time:-1|distance:1");
+
+        HttpUtil.get(SEARCH_SITE, "nearby", params, new HttpCallbackListener() {
+            @Override
+            public void onFinished(String response) {
+                Log.w("getNearPreQuery", response);
                 try {
                     JSONObject object = new JSONObject(response);
                     if (object.getInt("status") == 0 && listener != null) {

@@ -18,21 +18,26 @@ import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
 import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
+import com.baidu.mapapi.map.OverlayOptions;
+import com.baidu.mapapi.model.LatLng;
 
-import org.apache.http.NameValuePair;
-import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends ActionBarActivity {
 
     private MapView mapView = null;
     private BaiduMap baiduMap = null;
+    private BitmapDescriptor bitmapDescriptor = null;
 
     public LocationClient mLocationClient = null;
+
+    public BDLocation mLocation = null;
 
     public BDLocationListener locationListener = new LocationListener();
 
@@ -66,6 +71,9 @@ public class MainActivity extends ActionBarActivity {
         MyLocationConfiguration config = new MyLocationConfiguration(MyLocationConfiguration.LocationMode.FOLLOWING,
                 true, currentMarker);
         baiduMap.setMyLocationConfigeration(config);
+
+        bitmapDescriptor = BitmapDescriptorFactory
+                .fromResource(R.mipmap.ic_launcher);
     }
 
     @Override
@@ -115,7 +123,7 @@ public class MainActivity extends ActionBarActivity {
         option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy
         );//可选，默认高精度，设置定位模式，高精度，低功耗，仅设备
         option.setCoorType("bd09ll");//可选，默认gcj02，设置返回的定位结果坐标系
-        int span=1000;
+        int span=10000;
         option.setScanSpan(span);//可选，默认0，即仅定位一次，设置发起定位请求的间隔需要大于等于1000ms才是有效的
         option.setIsNeedAddress(true);//可选，设置是否需要地址信息，默认不需要
         option.setOpenGps(true);//可选，默认false,设置是否使用gps
@@ -149,6 +157,29 @@ public class MainActivity extends ActionBarActivity {
 // 设置定位数据
             baiduMap.setMyLocationData(locData);
 // 设置定位图层的配置（定位模式，是否允许方向信息，用户自定义定位图标）
+            if (location != null && mLocation == null) {
+                MapDB.getNearbyPosts(location, new RowQueryListener() {
+                    @Override
+                    public void onGet(String response) {
+                        try {
+                            JSONObject object = new JSONObject(response);
+                            JSONArray contents = object.getJSONArray("contents");
+                            for (int i = 0; i < contents.length(); ++i) {
+                                JSONObject poi = contents.getJSONObject(i);
+                                JSONArray location = poi.getJSONArray("location");
+                                LatLng point = new LatLng(location.getDouble(0), location.getDouble(1));
+                                OverlayOptions option = new MarkerOptions()
+                                        .position(point)
+                                        .icon(bitmapDescriptor);
+                                baiduMap.addOverlay(option);
+                            }
+                        } catch (Exception e) {
+
+                        }
+                    }
+                });
+                mLocation = location;
+            }
 
             //Receive Location
             StringBuffer sb = new StringBuffer(256);
