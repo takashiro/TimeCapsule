@@ -18,10 +18,10 @@ import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.mogara.timecapsule.core.Config;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.os.Environment;
 
 import com.alibaba.simpleimage.analyze.kdtree.KDTree;
 import com.alibaba.simpleimage.analyze.sift.SIFT;
@@ -32,8 +32,7 @@ import com.alibaba.simpleimage.analyze.sift.scale.KDFeaturePoint;
 
 public final class Capsule {
 
-	private static final String STORAGE_PATH = Environment.getExternalStorageDirectory().getPath() + "/TimeCapsule";
-	private static final String ROOT_PATH = STORAGE_PATH + "/capsule";
+	private static final String ROOT_PATH = Config.STORAGE_PATH + "/capsule";
 	private static final String REMOTE_PROCESSOR_IP = "192.168.1.104";
 	private static final int REMOTE_PROCESSOR_PORT = 9527;
 	private static final int MIN_MATCHED_KEY_NUM = 100;

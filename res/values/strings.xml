@@ -3,5 +3,6 @@
 
     <string name="app_name">Time Capsule</string>
     <string name="add_capsule">Add Capsule</string>
+    <string name="take_out">Take Out</string>
 
 </resources>
