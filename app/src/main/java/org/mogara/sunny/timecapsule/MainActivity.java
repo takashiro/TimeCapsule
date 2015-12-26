@@ -47,27 +47,7 @@ public class MainActivity extends ActionBarActivity {
             @Override
             public void onClick(View view) {
                 BDLocation location = mLocationClient.getLastKnownLocation();
-                if (location == null) return;
-
-                List<NameValuePair> params = new ArrayList<NameValuePair>();
-                params.add(new BasicNameValuePair("title", "test"));
-                params.add(new BasicNameValuePair("latitude", Double.toString(location.getLatitude())));
-                params.add(new BasicNameValuePair("longitude", Double.toString(location.getLongitude())));
-                params.add(new BasicNameValuePair("coord_type", "1"));
-                params.add(new BasicNameValuePair("geotable_id", "129945"));
-                params.add(new BasicNameValuePair("ak", HttpUtil.BAIDU_AK));
-
-                HttpUtil.post("poi/create", params, new HttpCallbackListener() {
-                    @Override
-                    public void onFinished(String response) {
-                        Log.w("BaiduLBS", response);
-                    }
-
-                    @Override
-                    public void onError(Exception e) {
-
-                    }
-                });
+                MapDB.postTextAndImage(location, "Hello", null);
             }
         });
 

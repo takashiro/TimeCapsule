@@ -10,20 +10,6 @@ import java.util.Map;
  */
 public class SignatureCalculator {
 
-    public String toQueryString(Map<?, ?> data)
-            throws UnsupportedEncodingException {
-        StringBuffer queryString = new StringBuffer();
-        for (Map.Entry<?, ?> pair : data.entrySet()) {
-            queryString.append(pair.getKey() + "=");
-            queryString.append(URLEncoder.encode((String) pair.getValue(),
-                    "UTF-8") + "&");
-        }
-        if (queryString.length() > 0) {
-            queryString.deleteCharAt(queryString.length() - 1);
-        }
-        return queryString.toString();
-    }
-
     public String MD5(String md5) {
         try {
             java.security.MessageDigest md = java.security.MessageDigest

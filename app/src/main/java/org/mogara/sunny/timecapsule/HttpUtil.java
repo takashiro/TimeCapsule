@@ -1,6 +1,5 @@
 package org.mogara.sunny.timecapsule;
 
-import android.os.Message;
 import android.util.Log;
 
 import org.apache.http.HttpEntity;
@@ -13,8 +12,10 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 
-import java.util.LinkedHashMap;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This is a file created by sunny on 12/26/15 for TimeCapsule
@@ -22,18 +23,17 @@ import java.util.List;
  */
 public class HttpUtil {
 
-    public static final String BAIDU_AK = "qMw4Cb8iqoK7DD92nZfLfy2V";
-
     private static final String SITE = "http://api.map.baidu.com/geodata/v3/";
 
     public static void get(final String apiName,
+                           final List<NameValuePair> params,
                            final HttpCallbackListener listener) {
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     HttpClient httpClient = new DefaultHttpClient();
-                    HttpGet httpGet = new HttpGet(SITE + apiName);
+                    HttpGet httpGet = new HttpGet(SITE + apiName + toQueryString(params));
                     HttpResponse httpResponse = httpClient.execute(httpGet);
                     if (httpResponse.getStatusLine().getStatusCode() == 200) {
                         HttpEntity entity = httpResponse.getEntity();
@@ -78,5 +78,19 @@ public class HttpUtil {
                 }
             }
         }).start();
+    }
+
+    static private String toQueryString(final List<NameValuePair> data)
+            throws UnsupportedEncodingException {
+        StringBuffer queryString = new StringBuffer();
+        queryString.append("?");
+        for (NameValuePair pair : data) {
+            queryString.append(pair.getName() + "=");
+            queryString.append(URLEncoder.encode(pair.getValue(), "UTF-8") + "&");
+        }
+        if (queryString.length() > 0) {
+            queryString.deleteCharAt(queryString.length() - 1);
+        }
+        return queryString.toString();
     }
 }
