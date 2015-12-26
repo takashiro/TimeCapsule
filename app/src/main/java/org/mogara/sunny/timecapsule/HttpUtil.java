@@ -22,10 +22,8 @@ import java.util.Map;
  * Contact sunny via sunny@mogara.org for cooperation.
  */
 public class HttpUtil {
-
-    private static final String SITE = "http://api.map.baidu.com/geodata/v3/";
-
-    public static void get(final String apiName,
+    public static void get(final String site,
+                           final String apiName,
                            final List<NameValuePair> params,
                            final HttpCallbackListener listener) {
         new Thread(new Runnable() {
@@ -33,7 +31,8 @@ public class HttpUtil {
             public void run() {
                 try {
                     HttpClient httpClient = new DefaultHttpClient();
-                    HttpGet httpGet = new HttpGet(SITE + apiName + toQueryString(params));
+                    HttpGet httpGet = new HttpGet(site + apiName + toQueryString(params));
+                    Log.w("GET", site + apiName + toQueryString(params));
                     HttpResponse httpResponse = httpClient.execute(httpGet);
                     if (httpResponse.getStatusLine().getStatusCode() == 200) {
                         HttpEntity entity = httpResponse.getEntity();
@@ -51,7 +50,8 @@ public class HttpUtil {
         }).start();
     }
 
-    public static void post(final String apiName,
+    public static void post(final String site,
+                            final String apiName,
                             final List<NameValuePair> params,
                             final HttpCallbackListener listener) {
         new Thread(new Runnable() {
@@ -59,7 +59,7 @@ public class HttpUtil {
             public void run() {
                 try {
                     HttpClient httpClient = new DefaultHttpClient();
-                    HttpPost httpPost = new HttpPost(SITE + apiName);
+                    HttpPost httpPost = new HttpPost(site + apiName);
                     UrlEncodedFormEntity entity = new UrlEncodedFormEntity(params, "utf-8");
                     httpPost.setEntity(entity);
                     Log.w("POST", entity.toString());
