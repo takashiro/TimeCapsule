@@ -9,6 +9,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -96,7 +97,8 @@ public final class Capsule {
 		File siftFile = new File(getPath() + "/image.sift");
 		if (REMOTE_PROCESSOR_IP != null && !siftFile.exists()) {
 			try {
-				Socket socket = new Socket(REMOTE_PROCESSOR_IP, REMOTE_PROCESSOR_PORT);
+				Socket socket = new Socket();
+				socket.connect(new InetSocketAddress(REMOTE_PROCESSOR_IP, REMOTE_PROCESSOR_PORT), 3000);
 				OutputStream output = socket.getOutputStream();
 
 				File imageFile = new File(getRawImage());
