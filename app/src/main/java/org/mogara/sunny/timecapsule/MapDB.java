@@ -26,6 +26,16 @@ public class MapDB {
     private static final String TYPE_AUDIO = "2";
 
     public static void postTextAndImage(BDLocation location, final String text, final String fileName) {
+        post(location, TYPE_MESSAGE, text);
+        //@TODO upload file
+    }
+
+    public static void postAudio(final BDLocation location, final String path) {
+        post(location, TYPE_AUDIO, null);
+        //@TODO upload file
+    }
+
+    private static void post(final BDLocation location, final String type, final String text) {
         if (location == null) return;
 
         List<NameValuePair> params = new ArrayList<NameValuePair>();
@@ -35,8 +45,13 @@ public class MapDB {
         params.add(new BasicNameValuePair("coord_type", "1"));
         params.add(new BasicNameValuePair("geotable_id", GEOTABLE_ID));
         params.add(new BasicNameValuePair("ak", BAIDU_AK));
-        params.add(new BasicNameValuePair("message", text));
-        params.add(new BasicNameValuePair("post_type", TYPE_MESSAGE));
+
+        if (type == TYPE_MESSAGE) {
+            params.add(new BasicNameValuePair("message", text));
+            params.add(new BasicNameValuePair("post_type", TYPE_MESSAGE));
+        } else {
+            params.add(new BasicNameValuePair("post_type", TYPE_AUDIO));
+        }
 
         HttpUtil.post("poi/create", params, new HttpCallbackListener() {
             @Override
