@@ -2,5 +2,6 @@
 <resources>
 
     <string name="app_name">Time Capsule</string>
+    <string name="add_capsule">Add Capsule</string>
 
 </resources>
