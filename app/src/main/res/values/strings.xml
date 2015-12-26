@@ -2,4 +2,7 @@
     <string name="app_name">TimeCapsule</string>
     <string name="action_settings">Settings</string>
     <string name="uploadPoi">Update Poi</string>
+    <string name="title_activity_post">PostActivity</string>
+    <string name="record">Record</string>
+    <string name="play">Play</string>
 </resources>
