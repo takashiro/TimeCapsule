@@ -2,20 +2,21 @@ package org.mogara.sunny.timecapsule;
 
 import android.content.Context;
 import android.content.Intent;
-import android.database.DataSetObserver;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.app.Activity;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
@@ -36,8 +38,33 @@ public class PostListActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_post_list);
 
+        List<Map<String, Object>> data = new ArrayList< Map<String, Object> >();
+
+        String json = savedInstanceState.getString("json");
+        try {
+            JSONObject jsonobj = new JSONObject(json);
+            JSONArray contents = jsonobj.getJSONArray("contents");
+            for (int i = 0; i < contents.length(); i++) {
+                JSONObject post = contents.getJSONObject(i);
+
+                Map<String, Object> item = new HashMap<String, Object>();
+                item.put("image", FileServer.BASIC_URL + "data/" + post.getString("uid") + ".jpg");
+                int now = (int) System.currentTimeMillis();
+                item.put("dateline", now - 30);
+                item.put("expiry", now + 24 * 3600);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        List<Map<String, Object>> static_data = getData();
+        ListIterator<Map<String, Object>> iter = static_data.listIterator();
+        while (iter.hasNext()) {
+            data.add(iter.next());
+        }
+
         ListAdapter adapter = new MediaListAdapter(this,
-                getData(),
+                data,
                 R.layout.post_item,
                 new String[]{"image", "dateline", "expiry"},
                 new int[]{R.id.post_image, R.id.post_dateline, R.id.post_expiry}
