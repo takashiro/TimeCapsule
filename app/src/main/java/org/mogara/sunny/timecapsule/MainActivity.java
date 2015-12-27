@@ -1,10 +1,14 @@
 package org.mogara.sunny.timecapsule;
 
+import android.media.MediaPlayer;
+import android.media.MediaRecorder;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 
@@ -17,14 +21,18 @@ import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
+import com.baidu.mapapi.map.MapStatusUpdate;
+import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
+import com.baidu.mapapi.map.OverlayOptions;
+import com.baidu.mapapi.model.LatLng;
 
-import org.apache.http.NameValuePair;
-import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends ActionBarActivity {
@@ -36,20 +44,19 @@ public class MainActivity extends ActionBarActivity {
 
     public BDLocationListener locationListener = new LocationListener();
 
+    private BitmapDescriptor bitmapDescriptor = null;
+    public BDLocation mLocation = null;
+
+    MediaRecorder mediaRecorder = null;
+    MediaPlayer mediaPlayer = null;
+
+    private String audioFilePath = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         SDKInitializer.initialize(getApplicationContext());
         setContentView(R.layout.activity_main);
-
-        Button updatePoi = (Button) findViewById(R.id.uploadPosition);
-        updatePoi.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                BDLocation location = mLocationClient.getLastKnownLocation();
-                MapDB.postTextAndImage(location, "Hello", null);
-            }
-        });
 
         mapView = (MapView) findViewById(R.id.bmapView);
         baiduMap = mapView.getMap();
@@ -63,9 +70,67 @@ public class MainActivity extends ActionBarActivity {
 
         BitmapDescriptor currentMarker = BitmapDescriptorFactory
                 .fromResource(R.mipmap.ic_launcher);
-        MyLocationConfiguration config = new MyLocationConfiguration(MyLocationConfiguration.LocationMode.FOLLOWING,
+        MyLocationConfiguration config = new MyLocationConfiguration(MyLocationConfiguration.LocationMode.NORMAL,
                 true, currentMarker);
         baiduMap.setMyLocationConfigeration(config);
+
+        bitmapDescriptor = BitmapDescriptorFactory
+                .fromResource(R.mipmap.ic_launcher);
+
+        audioFilePath = Environment.getExternalStorageDirectory().getAbsolutePath();
+        audioFilePath += "/test.3gp";
+
+        Button recordButton = (Button) findViewById(R.id.record);
+
+        recordButton.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                    mediaRecorder = new MediaRecorder();
+                    mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+                    mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+                    mediaRecorder.setOutputFile(audioFilePath);
+                    mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+                    try {
+                        mediaRecorder.prepare();
+                        mediaRecorder.start();
+                    } catch (Exception e) {
+                        Log.e("Record", e.toString());
+                    }
+                } else if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
+                    mediaRecorder.stop();
+                    mediaRecorder.release();
+                    MapDB.postAudio(mLocationClient.getLastKnownLocation(), audioFilePath);
+                    mediaRecorder = null;
+                }
+                return false;
+            }
+        });
+
+        Button playButton = (Button) findViewById(R.id.play);
+        playButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mediaPlayer = new MediaPlayer();
+                mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                    @Override
+                    public void onCompletion(MediaPlayer mediaPlayer) {
+                        mediaPlayer.release();
+                        mediaPlayer = null;
+                    }
+                });
+
+                try {
+
+                    mediaPlayer.setDataSource(FileServer.BASIC_URL + "data/1552873883.3gp");
+                    mediaPlayer.prepare();
+                    mediaPlayer.start();
+                } catch (Exception e) {
+                    Log.e("Play", e.toString());
+                }
+            }
+        });
+
     }
 
     @Override
@@ -115,7 +180,7 @@ public class MainActivity extends ActionBarActivity {
         option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy
         );//可选，默认高精度，设置定位模式，高精度，低功耗，仅设备
         option.setCoorType("bd09ll");//可选，默认gcj02，设置返回的定位结果坐标系
-        int span=1000;
+        int span=10000;
         option.setScanSpan(span);//可选，默认0，即仅定位一次，设置发起定位请求的间隔需要大于等于1000ms才是有效的
         option.setIsNeedAddress(true);//可选，设置是否需要地址信息，默认不需要
         option.setOpenGps(true);//可选，默认false,设置是否使用gps
@@ -150,7 +215,36 @@ public class MainActivity extends ActionBarActivity {
             baiduMap.setMyLocationData(locData);
 // 设置定位图层的配置（定位模式，是否允许方向信息，用户自定义定位图标）
 
-            //Receive Location
+            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+//            MapStatus mapStatus = new MapStatus.Builder().target(latLng).build();
+            MapStatusUpdate mapStatusUpdate = MapStatusUpdateFactory.newLatLng(latLng);
+            baiduMap.setMapStatus(mapStatusUpdate);
+
+            if (location != null && mLocation == null) {
+                MapDB.getNearbyPosts(location, new RowQueryListener() {
+                    @Override
+                    public void onGet(String response) {
+                        try {
+                            JSONObject object = new JSONObject(response);
+                            JSONArray contents = object.getJSONArray("contents");
+                            for (int i = 0; i < contents.length(); ++i) {
+                                JSONObject poi = contents.getJSONObject(i);
+                                JSONArray location = poi.getJSONArray("location");
+                                LatLng point = new LatLng(location.getDouble(1), location.getDouble(0));
+                                OverlayOptions option = new MarkerOptions()
+                                        .position(point)
+                                        .icon(bitmapDescriptor);
+                                baiduMap.addOverlay(option);
+                            }
+                        } catch (Exception e) {
+
+                        }
+                    }
+                });
+                mLocation = location;
+            }
+
+                                //Receive Location
             StringBuffer sb = new StringBuffer(256);
             sb.append("time : ");
             sb.append(location.getTime());

@@ -22,18 +22,18 @@ import java.util.Map;
  * Contact sunny via sunny@mogara.org for cooperation.
  */
 public class HttpUtil {
-
-    private static final String SITE = "http://api.map.baidu.com/geodata/v3/";
-
-    public static void get(final String apiName,
+    public static void get(final String site,
+                           final String apiName,
                            final List<NameValuePair> params,
-                           final HttpCallbackListener listener) {
+                           final HttpCallbackListener listener,
+                           final boolean willEncode) {
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     HttpClient httpClient = new DefaultHttpClient();
-                    HttpGet httpGet = new HttpGet(SITE + apiName + toQueryString(params));
+                    HttpGet httpGet = new HttpGet(site + apiName + toQueryString(params));
+                    Log.w("GET", site + apiName + toQueryString(params, willEncode));
                     HttpResponse httpResponse = httpClient.execute(httpGet);
                     if (httpResponse.getStatusLine().getStatusCode() == 200) {
                         HttpEntity entity = httpResponse.getEntity();
@@ -51,7 +51,8 @@ public class HttpUtil {
         }).start();
     }
 
-    public static void post(final String apiName,
+    public static void post(final String site,
+                            final String apiName,
                             final List<NameValuePair> params,
                             final HttpCallbackListener listener) {
         new Thread(new Runnable() {
@@ -59,7 +60,7 @@ public class HttpUtil {
             public void run() {
                 try {
                     HttpClient httpClient = new DefaultHttpClient();
-                    HttpPost httpPost = new HttpPost(SITE + apiName);
+                    HttpPost httpPost = new HttpPost(site + apiName);
                     UrlEncodedFormEntity entity = new UrlEncodedFormEntity(params, "utf-8");
                     httpPost.setEntity(entity);
                     Log.w("POST", entity.toString());
@@ -82,11 +83,20 @@ public class HttpUtil {
 
     static private String toQueryString(final List<NameValuePair> data)
             throws UnsupportedEncodingException {
+        return toQueryString(data, true);
+    }
+
+    static private String toQueryString(final List<NameValuePair> data, boolean willEncode)
+            throws UnsupportedEncodingException {
         StringBuffer queryString = new StringBuffer();
         queryString.append("?");
         for (NameValuePair pair : data) {
             queryString.append(pair.getName() + "=");
-            queryString.append(URLEncoder.encode(pair.getValue(), "UTF-8") + "&");
+            String value = pair.getValue();
+            if (willEncode) {
+                value = URLEncoder.encode(value, "UTF-8");
+            }
+            queryString.append(value + "&");
         }
         if (queryString.length() > 0) {
             queryString.deleteCharAt(queryString.length() - 1);
