@@ -17,7 +17,9 @@ import android.widget.SimpleAdapter;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,11 +70,18 @@ public class PostListActivity extends Activity {
     }
 
     protected String parseTime(int timestamp) {
-        return String.valueOf(timestamp);
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+        return format.format(new Date(timestamp * 1000));
     }
 
     protected String parseExpiry(int expiry) {
-        return String.valueOf(expiry);
+        if (expiry >= 86400)
+            return (expiry / 86400) + "天";
+        if (expiry >= 3600)
+            return "约" + (expiry / 3600) + "小时";
+        int i = expiry / 60;
+        int s = expiry % 60;
+        return i + ":" + s;
     }
 
     private static class MediaListAdapter extends SimpleAdapter{
