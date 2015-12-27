@@ -38,7 +38,7 @@ public class BootActivity extends Activity {
 				SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(BootActivity.this);
 				Intent intent = null;
 				
-				/*long lastUpdateTime = 0;
+				long lastUpdateTime = 0;
 				try{
 					lastUpdateTime = settings.getLong("lastUpdateTime", 0);
 				}catch(ClassCastException e){
@@ -52,8 +52,7 @@ public class BootActivity extends Activity {
 					editor.commit();
 				}else{
 					intent = new Intent(BootActivity.this, MainActivity.class);
-				}*/
-                intent = new Intent(BootActivity.this, PostListActivity.class);
+				}
 				
 				startActivity(intent);
 				finish();
