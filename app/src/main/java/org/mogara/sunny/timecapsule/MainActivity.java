@@ -1,10 +1,14 @@
 package org.mogara.sunny.timecapsule;
 
+import android.media.MediaPlayer;
+import android.media.MediaRecorder;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 
@@ -17,7 +21,6 @@ import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
-import com.baidu.mapapi.map.MapStatus;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
@@ -27,12 +30,9 @@ import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.model.LatLng;
 
-import org.apache.http.NameValuePair;
-import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends ActionBarActivity {
@@ -47,21 +47,16 @@ public class MainActivity extends ActionBarActivity {
     private BitmapDescriptor bitmapDescriptor = null;
     public BDLocation mLocation = null;
 
+    MediaRecorder mediaRecorder = null;
+    MediaPlayer mediaPlayer = null;
+
+    private String audioFilePath = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         SDKInitializer.initialize(getApplicationContext());
         setContentView(R.layout.activity_main);
-
-        Button updatePoi = (Button) findViewById(R.id.uploadPosition);
-        updatePoi.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                BDLocation location = mLocationClient.getLastKnownLocation();
-                MapDB.postTextAndImage(location, "我们刚刚在这里完成了程序逻辑", null);
-            }
-        });
 
         mapView = (MapView) findViewById(R.id.bmapView);
         baiduMap = mapView.getMap();
@@ -81,6 +76,60 @@ public class MainActivity extends ActionBarActivity {
 
         bitmapDescriptor = BitmapDescriptorFactory
                 .fromResource(R.mipmap.ic_launcher);
+
+        audioFilePath = Environment.getExternalStorageDirectory().getAbsolutePath();
+        audioFilePath += "/test.3gp";
+
+        Button recordButton = (Button) findViewById(R.id.record);
+
+        recordButton.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                    mediaRecorder = new MediaRecorder();
+                    mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+                    mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+                    mediaRecorder.setOutputFile(audioFilePath);
+                    mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+                    try {
+                        mediaRecorder.prepare();
+                        mediaRecorder.start();
+                    } catch (Exception e) {
+                        Log.e("Record", e.toString());
+                    }
+                } else if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
+                    mediaRecorder.stop();
+                    mediaRecorder.release();
+                    MapDB.postAudio(mLocationClient.getLastKnownLocation(), audioFilePath);
+                    mediaRecorder = null;
+                }
+                return false;
+            }
+        });
+
+        Button playButton = (Button) findViewById(R.id.play);
+        playButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mediaPlayer = new MediaPlayer();
+                mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                    @Override
+                    public void onCompletion(MediaPlayer mediaPlayer) {
+                        mediaPlayer.release();
+                        mediaPlayer = null;
+                    }
+                });
+
+                try {
+
+                    mediaPlayer.setDataSource(FileServer.BASIC_URL + "data/1552873883.3gp");
+                    mediaPlayer.prepare();
+                    mediaPlayer.start();
+                } catch (Exception e) {
+                    Log.e("Play", e.toString());
+                }
+            }
+        });
 
     }
 

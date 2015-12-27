@@ -44,16 +44,6 @@
             android:name="com.baidu.lbsapi.API_KEY"
             android:value="c7XNyyF63tQUO9Y5ZUwHBSzg" />
 
-        <activity
-            android:name=".PostActivity"
-            android:label="@string/title_activity_post" >
-
-            <!--<intent-filter>-->
-                <!--<action android:name="android.intent.action.MAIN" />-->
-
-                <!--<category android:name="android.intent.category.LAUNCHER" />-->
-            <!--</intent-filter>-->
-        </activity>
     </application>
 
 </manifest>

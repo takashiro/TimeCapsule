@@ -8,6 +8,10 @@ import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,16 +34,16 @@ public class MapDB {
     private static final String TYPE_AUDIO = "2";
 
     public static void postTextAndImage(BDLocation location, final String text, final String fileName) {
-        post(location, TYPE_MESSAGE, text);
-        //@TODO upload file
+        post(location, TYPE_MESSAGE, text, fileName);
     }
 
     public static void postAudio(final BDLocation location, final String path) {
-        post(location, TYPE_AUDIO, null);
+        post(location, TYPE_AUDIO, null, path);
         //@TODO upload file
     }
 
-    private static void post(final BDLocation location, final String type, final String text) {
+    private static void post(final BDLocation location, final String type,
+                             final String text, final String path) {
         if (location == null) return;
 
         List<NameValuePair> params = new ArrayList<NameValuePair>();
@@ -64,6 +68,13 @@ public class MapDB {
                 try {
                     JSONObject object = new JSONObject(response);
                     int id = object.getInt("id");
+
+                    File file = new File(path);
+                    if (file.exists()) {
+                        InputStream in = new BufferedInputStream(new FileInputStream(file));
+                        FileServer.upload(id + getExtensionName(path), in);
+                    }
+
                     getRowById(id, new RowQueryListener() {
                         @Override
                         public void onGet(String response) {
@@ -142,5 +153,15 @@ public class MapDB {
             }
         }, false);
 
+    }
+
+    private static String getExtensionName(String filename) {
+        if ((filename != null) && (filename.length() > 0)) {
+            int dot = filename.lastIndexOf('.');
+            if ((dot >-1) && (dot < (filename.length() - 1))) {
+                return filename.substring(dot);
+            }
+        }
+        return filename;
     }
 }
