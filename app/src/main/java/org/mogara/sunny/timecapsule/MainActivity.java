@@ -1,5 +1,10 @@
 package org.mogara.sunny.timecapsule;
 
+import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.Bundle;
@@ -10,6 +15,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
 import android.widget.Button;
 
 import com.baidu.location.BDLocation;
@@ -21,9 +27,11 @@ import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
+import com.baidu.mapapi.map.MapStatus;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.Marker;
 import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
@@ -56,11 +64,19 @@ public class MainActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         SDKInitializer.initialize(getApplicationContext());
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
 
         mapView = (MapView) findViewById(R.id.bmapView);
         baiduMap = mapView.getMap();
 //        baiduMap.setMapType(BaiduMap.MAP_TYPE_SATELLITE);
+        baiduMap.setOnMarkerClickListener(new BaiduMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                Log.w("Marker Clicked", marker.getPosition().toString());
+                return false;
+            }
+        });
 
         mLocationClient = new LocationClient(getApplicationContext());     //声明LocationClient类
         mLocationClient.registerLocationListener(locationListener);    //注册监听函数
@@ -69,13 +85,13 @@ public class MainActivity extends ActionBarActivity {
         mLocationClient.start();
 
         BitmapDescriptor currentMarker = BitmapDescriptorFactory
-                .fromResource(R.mipmap.ic_launcher);
+                .fromResource(R.mipmap.my_location);
         MyLocationConfiguration config = new MyLocationConfiguration(MyLocationConfiguration.LocationMode.NORMAL,
                 true, currentMarker);
         baiduMap.setMyLocationConfigeration(config);
 
         bitmapDescriptor = BitmapDescriptorFactory
-                .fromResource(R.mipmap.ic_launcher);
+                .fromResource(R.mipmap.locator);
 
         audioFilePath = Environment.getExternalStorageDirectory().getAbsolutePath();
         audioFilePath += "/test.3gp";
@@ -131,6 +147,37 @@ public class MainActivity extends ActionBarActivity {
             }
         });
 
+        SensorManager manager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        if (manager.getSensorList(Sensor.TYPE_ORIENTATION).size() == 0) {
+            Log.e("ROTATION", "NO SENSOR");
+        } else {
+            Sensor compass = manager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
+            manager.registerListener(new SensorEventListener() {
+                @Override
+                public void onSensorChanged(SensorEvent sensorEvent) {
+                    BDLocation location = mLocationClient.getLastKnownLocation();
+                    if (location != null) {
+                        float yaw = sensorEvent.values[0];
+                        MyLocationData locData = new MyLocationData.Builder()
+                                .accuracy(location.getRadius())
+                                .direction(yaw)
+                                        // 此处设置开发者获取到的方向信息，顺时针0-360
+                                .latitude(location.getLatitude())
+                                .longitude(location.getLongitude()).build();
+// 设置定位数据
+                        baiduMap.setMyLocationData(locData);
+                    }
+                }
+
+                @Override
+                public void onAccuracyChanged(Sensor sensor, int i) {
+
+                }
+            }, compass, SensorManager.SENSOR_DELAY_FASTEST);
+        }
+
+        // 开启定位图层
+        baiduMap.setMyLocationEnabled(true);
     }
 
     @Override
@@ -180,7 +227,7 @@ public class MainActivity extends ActionBarActivity {
         option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy
         );//可选，默认高精度，设置定位模式，高精度，低功耗，仅设备
         option.setCoorType("bd09ll");//可选，默认gcj02，设置返回的定位结果坐标系
-        int span=10000;
+        int span=1000;
         option.setScanSpan(span);//可选，默认0，即仅定位一次，设置发起定位请求的间隔需要大于等于1000ms才是有效的
         option.setIsNeedAddress(true);//可选，设置是否需要地址信息，默认不需要
         option.setOpenGps(true);//可选，默认false,设置是否使用gps
@@ -202,23 +249,6 @@ public class MainActivity extends ActionBarActivity {
 //                    .build();
 //
 //            baiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(mapStatus));
-
-            // 开启定位图层
-            baiduMap.setMyLocationEnabled(true);
-// 构造定位数据
-            MyLocationData locData = new MyLocationData.Builder()
-                    .accuracy(location.getRadius())
-                            // 此处设置开发者获取到的方向信息，顺时针0-360
-                    .direction(100).latitude(location.getLatitude())
-                    .longitude(location.getLongitude()).build();
-// 设置定位数据
-            baiduMap.setMyLocationData(locData);
-// 设置定位图层的配置（定位模式，是否允许方向信息，用户自定义定位图标）
-
-            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-//            MapStatus mapStatus = new MapStatus.Builder().target(latLng).build();
-            MapStatusUpdate mapStatusUpdate = MapStatusUpdateFactory.newLatLng(latLng);
-            baiduMap.setMapStatus(mapStatusUpdate);
 
             if (location != null && mLocation == null) {
                 MapDB.getNearbyPosts(location, new RowQueryListener() {
@@ -242,6 +272,12 @@ public class MainActivity extends ActionBarActivity {
                     }
                 });
                 mLocation = location;
+
+                LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                MapStatus mapStatus = new MapStatus.Builder().target(latLng).zoom(16).build();
+                MapStatusUpdate mapStatusUpdate = MapStatusUpdateFactory.newMapStatus(mapStatus);
+
+                baiduMap.setMapStatus(mapStatusUpdate);
             }
 
                                 //Receive Location
