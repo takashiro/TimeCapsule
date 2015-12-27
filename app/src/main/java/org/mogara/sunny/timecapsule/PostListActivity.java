@@ -55,7 +55,7 @@ public class PostListActivity extends Activity {
         });
 
         ImageButton addButton = (ImageButton) findViewById(R.id.addPostButton);
-        addButton.setOnClickListener(new Button.OnClickListener(){
+        addButton.setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(PostListActivity.this, MainActivity.class);
@@ -66,11 +66,11 @@ public class PostListActivity extends Activity {
 
     protected List<Map<String, Object>> getData() {
         List<Map<String, Object>> data = new ArrayList<Map<String, Object>>();
-        for (int i = 0; i < 6; i++) {
+        for (int i = 1; i <= 3; i++) {
             Map<String, Object> item = new HashMap<String, Object>();
-            item.put("image", FileServer.BASIC_URL + "data/test.jpg");
-            item.put("dateline", parseTime(1234));
-            item.put("expiry", parseExpiry(1234));
+            item.put("image", FileServer.BASIC_URL + "data/test/" + i + ".JPG");
+            item.put("dateline", parseTime(12340000 + i * 12));
+            item.put("expiry", parseExpiry(360 + i * 60));
             data.add(item);
         }
         return data;
