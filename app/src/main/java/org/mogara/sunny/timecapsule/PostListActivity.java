@@ -98,7 +98,7 @@ public class PostListActivity extends Activity {
 
         public DownloadImageTask(ImageView image_view) {
             this.view = image_view;
-            width = view.getWidth();
+            width = 1000;
         }
 
         protected Bitmap doInBackground(String... urls) {
@@ -107,8 +107,8 @@ public class PostListActivity extends Activity {
             try {
                 InputStream in = new java.net.URL(urldisplay).openStream();
                 Bitmap bitmap = BitmapFactory.decodeStream(in);
-                if (width > bitmap.getWidth()) {
-                    int height = bitmap.getHeight() / bitmap.getWidth() * width;
+                if (width < bitmap.getWidth()) {
+                    int height = (int) ((float) bitmap.getHeight() / bitmap.getWidth() * width);
                     return bitmap.createScaledBitmap(bitmap, width, height, true);
                 }
                 return bitmap;
