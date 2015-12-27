@@ -25,24 +25,22 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.NoTitleBar" >
-
         <activity
             android:name=".BootActivity"
-            android:label="@string/app_name">
+            android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name" >
         </activity>
-
         <activity
             android:name=".GuideActivity"
-            android:label="@string/app_name">
+            android:label="@string/app_name" >
         </activity>
 
         <service
@@ -54,6 +52,10 @@
             android:name="com.baidu.lbsapi.API_KEY"
             android:value="c7XNyyF63tQUO9Y5ZUwHBSzg" />
 
+        <activity
+            android:name=".PostListActivity"
+            android:label="@string/title_activity_post_list" >
+        </activity>
     </application>
 
 </manifest>
