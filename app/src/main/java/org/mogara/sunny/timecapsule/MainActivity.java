@@ -17,6 +17,9 @@ import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
+import com.baidu.mapapi.map.MapStatus;
+import com.baidu.mapapi.map.MapStatusUpdate;
+import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationConfiguration;
@@ -24,22 +27,26 @@ import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.model.LatLng;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends ActionBarActivity {
 
     private MapView mapView = null;
     private BaiduMap baiduMap = null;
-    private BitmapDescriptor bitmapDescriptor = null;
 
     public LocationClient mLocationClient = null;
 
+    public BDLocationListener locationListener = new LocationListener();
+
+    private BitmapDescriptor bitmapDescriptor = null;
     public BDLocation mLocation = null;
 
-    public BDLocationListener locationListener = new LocationListener();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,7 +59,7 @@ public class MainActivity extends ActionBarActivity {
             @Override
             public void onClick(View view) {
                 BDLocation location = mLocationClient.getLastKnownLocation();
-                MapDB.postTextAndImage(location, "Hello", null);
+                MapDB.postTextAndImage(location, "我们刚刚在这里完成了程序逻辑", null);
             }
         });
 
@@ -68,12 +75,13 @@ public class MainActivity extends ActionBarActivity {
 
         BitmapDescriptor currentMarker = BitmapDescriptorFactory
                 .fromResource(R.mipmap.ic_launcher);
-        MyLocationConfiguration config = new MyLocationConfiguration(MyLocationConfiguration.LocationMode.FOLLOWING,
+        MyLocationConfiguration config = new MyLocationConfiguration(MyLocationConfiguration.LocationMode.NORMAL,
                 true, currentMarker);
         baiduMap.setMyLocationConfigeration(config);
 
         bitmapDescriptor = BitmapDescriptorFactory
                 .fromResource(R.mipmap.ic_launcher);
+
     }
 
     @Override
@@ -157,6 +165,12 @@ public class MainActivity extends ActionBarActivity {
 // 设置定位数据
             baiduMap.setMyLocationData(locData);
 // 设置定位图层的配置（定位模式，是否允许方向信息，用户自定义定位图标）
+
+            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+//            MapStatus mapStatus = new MapStatus.Builder().target(latLng).build();
+            MapStatusUpdate mapStatusUpdate = MapStatusUpdateFactory.newLatLng(latLng);
+            baiduMap.setMapStatus(mapStatusUpdate);
+
             if (location != null && mLocation == null) {
                 MapDB.getNearbyPosts(location, new RowQueryListener() {
                     @Override
@@ -167,7 +181,7 @@ public class MainActivity extends ActionBarActivity {
                             for (int i = 0; i < contents.length(); ++i) {
                                 JSONObject poi = contents.getJSONObject(i);
                                 JSONArray location = poi.getJSONArray("location");
-                                LatLng point = new LatLng(location.getDouble(0), location.getDouble(1));
+                                LatLng point = new LatLng(location.getDouble(1), location.getDouble(0));
                                 OverlayOptions option = new MarkerOptions()
                                         .position(point)
                                         .icon(bitmapDescriptor);
@@ -181,7 +195,7 @@ public class MainActivity extends ActionBarActivity {
                 mLocation = location;
             }
 
-            //Receive Location
+                                //Receive Location
             StringBuffer sb = new StringBuffer(256);
             sb.append("time : ");
             sb.append(location.getTime());
