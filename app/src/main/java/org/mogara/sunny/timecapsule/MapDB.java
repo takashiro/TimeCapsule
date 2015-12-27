@@ -33,16 +33,16 @@ public class MapDB {
 
     private static final String TYPE_AUDIO = "2";
 
-    public static void postTextAndImage(BDLocation location, final String text, final String path) {
-        post(location, TYPE_MESSAGE, text, path);
+    public static void postTextAndImage(BDLocation location, final String text, final String path, final RowQueryListener listener) {
+        post(location, TYPE_MESSAGE, text, path, listener);
     }
 
-    public static void postAudio(final BDLocation location, final String path) {
-        post(location, TYPE_AUDIO, null, path);
+    public static void postAudio(final BDLocation location, final String path, final RowQueryListener listener) {
+        post(location, TYPE_AUDIO, null, path, listener);
     }
 
     private static void post(final BDLocation location, final String type,
-                             final String text, final String path) {
+                             final String text, final String path, final RowQueryListener listener) {
         if (location == null) return;
 
         List<NameValuePair> params = new ArrayList<NameValuePair>();
@@ -82,6 +82,10 @@ public class MapDB {
                             Log.w("Query", response);
                         }
                     });
+
+                    if (listener != null) {
+                        listener.onGet(response);
+                    }
                 } catch (Exception e) {
 
                 }

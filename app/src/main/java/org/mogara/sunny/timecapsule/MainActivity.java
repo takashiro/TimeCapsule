@@ -85,6 +85,22 @@ public class MainActivity extends Activity {
         baiduMap = mapView.getMap();
 //        baiduMap.setMapType(BaiduMap.MAP_TYPE_SATELLITE);
 
+        baiduMap.setOnMarkerClickListener(new BaiduMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                Log.w("Marker Clicked", marker.getPosition().toString());
+                MapDB.getNearbyPosts(mLocationClient.getLastKnownLocation(), new RowQueryListener() {
+                    @Override
+                    public void onGet(String response) {
+                        Intent intent = new Intent(MainActivity.this, PostListActivity.class);
+                        intent.putExtra("json", response);
+                        startActivity(intent);
+                    }
+                });
+                return false;
+            }
+        });
+
         mLocationClient = new LocationClient(getApplicationContext());     //声明LocationClient类
         mLocationClient.registerLocationListener(locationListener);    //注册监听函数
 
@@ -128,7 +144,13 @@ public class MainActivity extends Activity {
                     recordButton.setBackgroundColor(getResources().getColor(R.color.transparent));
                     mediaRecorder.stop();
                     mediaRecorder.release();
-                    MapDB.postAudio(mLocationClient.getLastKnownLocation(), audioFilePath);
+                    MapDB.postAudio(mLocationClient.getLastKnownLocation(), audioFilePath,
+                            new RowQueryListener() {
+                                @Override
+                                public void onGet(String response) {
+                                    refreshNearbyPosts(mLocationClient.getLastKnownLocation());
+                                }
+                            });
                     mediaRecorder = null;
 
                     refreshNearbyPosts(mLocationClient.getLastKnownLocation());
@@ -202,11 +224,16 @@ public class MainActivity extends Activity {
                     return false;
                 }
                 MapDB.postTextAndImage(mLocationClient.getLastKnownLocation(),
-                        textView.getText().toString(), null);
+                        textView.getText().toString(), null,
+                        new RowQueryListener() {
+                            @Override
+                            public void onGet(String response) {
+                                refreshNearbyPosts(mLocationClient.getLastKnownLocation());
+                            }
+                        });
 
                 textView.setText(new String());
 
-                refreshNearbyPosts(mLocationClient.getLastKnownLocation());
                 return true;
             }
         });
@@ -237,8 +264,13 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
-            MapDB.postTextAndImage(mLocationClient.getLastKnownLocation(), null, imageFilePath);
-            refreshNearbyPosts(mLocationClient.getLastKnownLocation());
+            MapDB.postTextAndImage(mLocationClient.getLastKnownLocation(), null, imageFilePath,
+                    new RowQueryListener() {
+                        @Override
+                        public void onGet(String response) {
+                            refreshNearbyPosts(mLocationClient.getLastKnownLocation());
+                        }
+                    });
         }
     }
 
@@ -385,7 +417,10 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void refreshNearbyPosts(BDLocation location) {
+    public void refreshNearbyPosts(BDLocation location) {
+        if (location == null) {
+            location = mLocationClient.getLastKnownLocation();
+        }
         MapDB.getNearbyPosts(location, new RowQueryListener() {
             @Override
             public void onGet(String response) {
@@ -401,14 +436,6 @@ public class MainActivity extends Activity {
                                 .icon(bitmapDescriptor);
                         baiduMap.addOverlay(option);
                     }
-
-                    baiduMap.setOnMarkerClickListener(new BaiduMap.OnMarkerClickListener() {
-                        @Override
-                        public boolean onMarkerClick(Marker marker) {
-                            Log.w("Marker Clicked", marker.getPosition().toString());
-                            return false;
-                        }
-                    });
                 } catch (Exception e) {
 
                 }
