@@ -4,18 +4,20 @@
     xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="org.mogara.sunny.timecapsule.PostListActivity">
+    tools:context="org.mogara.sunny.timecapsule.PostListActivity"
+    android:background="#bbb">
 
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#FFFFFF"
-        android:padding="5dp">
+        android:padding="5dp"
+        android:layout_marginBottom="1dp">
 
         <ImageButton
-            android:layout_width="60dp"
-            android:layout_height="60dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:scaleType="fitXY"
             android:background="#FFFFFF"
             android:src="@mipmap/back_button"
@@ -28,16 +30,16 @@
             android:background="#FFFFFF"
             android:gravity="right">
             <ImageButton
-                android:layout_width="60dp"
-                android:layout_height="60dp"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
                 android:scaleType="fitXY"
                 android:background="#FFFFFF"
                 android:src="@mipmap/setting_button"
                 android:id="@+id/settingButton"
                 android:layout_marginRight="7dp" />
             <ImageButton
-                android:layout_width="60dp"
-                android:layout_height="60dp"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
                 android:scaleType="fitXY"
                 android:background="#FFFFFF"
                 android:src="@mipmap/add_button"
@@ -49,5 +51,51 @@
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom"></LinearLayout>
+        android:layout_gravity="bottom">
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginBottom="1dp">
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="260dp"
+                android:scaleType="centerCrop"
+                android:src="@mipmap/sample2" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:background="#FFFFFF"
+                android:paddingTop="5dp"
+                android:paddingBottom="5dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="fill_parent"
+                    android:text="1小时以前"
+                    android:textSize="25dp"
+                    android:textColor="#000000"
+                    android:layout_marginLeft="12dp"
+                    android:layout_marginRight="20dp" />
+                <ImageView
+                    android:layout_marginRight="3dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:src="@mipmap/clock_icon" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="fill_parent"
+                    android:text="22:59"
+                    android:textSize="25dp"
+                    android:textColor="#000000"
+                    android:layout_marginRight="100dp"/>
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:src="@mipmap/add_time_button" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
 </LinearLayout>

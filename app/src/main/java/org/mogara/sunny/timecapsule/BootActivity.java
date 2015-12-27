@@ -53,7 +53,7 @@ public class BootActivity extends Activity {
 				}else{
 					intent = new Intent(BootActivity.this, MainActivity.class);
 				}*/
-                intent = new Intent(BootActivity.this, GuideActivity.class);
+                intent = new Intent(BootActivity.this, PostListActivity.class);
 				
 				startActivity(intent);
 				finish();
