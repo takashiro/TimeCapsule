@@ -13,26 +13,36 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:id="@+id/bottom_bar" >
-        <Button
+        android:id="@+id/bottom_bar"
+        android:padding="5dp"
+        android:background="@color/transparent_white">
+        <ImageButton
+            android:src="@mipmap/record"
             android:id="@+id/record"
             android:layout_width="48dp"
-            android:layout_height="match_parent"
-            android:text="@string/record" />
+            android:layout_height="48dp"
+            android:scaleType="fitXY"
+            android:background="@color/transparent"/>
 
         <EditText
             android:id="@+id/input"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:layout_gravity="center"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+            android:imeOptions="actionSend"/>
 
-        <Button
-            android:id="@+id/play"
+        <ImageButton
+            android:src="@mipmap/camera"
+            android:id="@+id/camera"
             android:layout_width="48dp"
-            android:layout_height="match_parent"
-            android:text="@string/play" />
+            android:layout_height="48dp"
+            android:scaleType="fitXY"
+            android:background="@color/transparent"/>
     </LinearLayout>
 
 </RelativeLayout>

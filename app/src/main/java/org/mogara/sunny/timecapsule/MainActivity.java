@@ -1,23 +1,31 @@
 package org.mogara.sunny.timecapsule;
 
 import android.content.Context;
+import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.app.Activity;
+import android.media.Image;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.TextView;
 
 import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
@@ -42,6 +50,7 @@ import com.baidu.mapapi.model.LatLng;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.util.List;
 
 public class MainActivity extends Activity {
@@ -60,6 +69,10 @@ public class MainActivity extends Activity {
     MediaPlayer mediaPlayer = null;
 
     private String audioFilePath = null;
+
+    private ImageButton recordButton = null;
+
+    private String imageFilePath = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,12 +110,16 @@ public class MainActivity extends Activity {
         audioFilePath = Environment.getExternalStorageDirectory().getAbsolutePath();
         audioFilePath += "/test.3gp";
 
-        Button recordButton = (Button) findViewById(R.id.record);
+        imageFilePath = Environment.getExternalStorageDirectory().getAbsolutePath();
+        imageFilePath += "/test.jpg";
+
+        recordButton = (ImageButton) findViewById(R.id.record);
 
         recordButton.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                    recordButton.setBackgroundColor(getResources().getColor(R.color.transparent_white));
                     mediaRecorder = new MediaRecorder();
                     mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
                     mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
@@ -115,6 +132,7 @@ public class MainActivity extends Activity {
                         Log.e("Record", e.toString());
                     }
                 } else if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
+                    recordButton.setBackgroundColor(getResources().getColor(R.color.transparent));
                     mediaRecorder.stop();
                     mediaRecorder.release();
                     MapDB.postAudio(mLocationClient.getLastKnownLocation(), audioFilePath);
@@ -124,29 +142,29 @@ public class MainActivity extends Activity {
             }
         });
 
-        Button playButton = (Button) findViewById(R.id.play);
-        playButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mediaPlayer = new MediaPlayer();
-                mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                    @Override
-                    public void onCompletion(MediaPlayer mediaPlayer) {
-                        mediaPlayer.release();
-                        mediaPlayer = null;
-                    }
-                });
-
-                try {
-
-                    mediaPlayer.setDataSource(FileServer.BASIC_URL + "data/1552873883.3gp");
-                    mediaPlayer.prepare();
-                    mediaPlayer.start();
-                } catch (Exception e) {
-                    Log.e("Play", e.toString());
-                }
-            }
-        });
+//        ImageButton playButton = (ImageButton) findViewById(R.id.play);
+//        playButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                mediaPlayer = new MediaPlayer();
+//                mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+//                    @Override
+//                    public void onCompletion(MediaPlayer mediaPlayer) {
+//                        mediaPlayer.release();
+//                        mediaPlayer = null;
+//                    }
+//                });
+//
+//                try {
+//
+//                    mediaPlayer.setDataSource(FileServer.BASIC_URL + "data/1552873883.3gp");
+//                    mediaPlayer.prepare();
+//                    mediaPlayer.start();
+//                } catch (Exception e) {
+//                    Log.e("Play", e.toString());
+//                }
+//            }
+//        });
 
         SensorManager manager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         if (manager.getSensorList(Sensor.TYPE_ORIENTATION).size() == 0) {
@@ -179,6 +197,45 @@ public class MainActivity extends Activity {
 
         // 开启定位图层
         baiduMap.setMyLocationEnabled(true);
+
+        EditText input = (EditText) findViewById(R.id.input);
+        input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                MapDB.postTextAndImage(mLocationClient.getLastKnownLocation(),
+                        textView.getText().toString(), null);
+                return true;
+            }
+        });
+
+        ImageButton cameraButton = (ImageButton) findViewById(R.id.camera);
+        cameraButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                File output = new File(imageFilePath);
+                try {
+                    if (output.exists()) {
+                        output.delete();
+                    }
+                    output.createNewFile();
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                Uri imageUri = Uri.fromFile(output);
+                Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+                startActivityForResult(intent, 1);
+            }
+        });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == RESULT_OK) {
+            MapDB.postTextAndImage(mLocationClient.getLastKnownLocation(), null, imageFilePath);
+        }
     }
 
     @Override
