@@ -52,6 +52,7 @@ public class PostListActivity extends Activity {
                 int now = (int) System.currentTimeMillis();
                 item.put("dateline", now - 30);
                 item.put("expiry", now + 24 * 3600);
+                data.add(item);
             }
         } catch (Exception e) {
             e.printStackTrace();
