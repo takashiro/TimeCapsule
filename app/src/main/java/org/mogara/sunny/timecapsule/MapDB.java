@@ -46,7 +46,7 @@ public class MapDB {
         params.add(new BasicNameValuePair("title", "test"));
         params.add(new BasicNameValuePair("latitude", Double.toString(location.getLatitude())));
         params.add(new BasicNameValuePair("longitude", Double.toString(location.getLongitude())));
-        params.add(new BasicNameValuePair("coord_type", "1"));
+        params.add(new BasicNameValuePair("coord_type", "3"));
         params.add(new BasicNameValuePair("geotable_id", GEOTABLE_ID));
         params.add(new BasicNameValuePair("ak", BAIDU_AK));
 
@@ -106,7 +106,7 @@ public class MapDB {
             public void onError(Exception e) {
 
             }
-        });
+        }, true);
     }
 
     public static void getNearbyPosts(final BDLocation location, final RowQueryListener listener) {
@@ -117,9 +117,10 @@ public class MapDB {
         String longitude = Double.toString(location.getLongitude());
 
         Log.w("location", latitude + "," + longitude);
-        params.add(new BasicNameValuePair("location", latitude + "," + longitude));
-        params.add(new BasicNameValuePair("radius", "10"));
-        params.add(new BasicNameValuePair("sortby", "disapper_time:-1|distance:1"));
+        params.add(new BasicNameValuePair("location", longitude + "," + latitude));
+        params.add(new BasicNameValuePair("coord_type", "3"));
+        params.add(new BasicNameValuePair("radius", "500"));
+        params.add(new BasicNameValuePair("sortby", "distance:1"));
 
         HttpUtil.get(SEARCH_SITE, "nearby", params, new HttpCallbackListener() {
             @Override
@@ -139,7 +140,7 @@ public class MapDB {
             public void onError(Exception e) {
 
             }
-        });
+        }, false);
 
     }
 }
