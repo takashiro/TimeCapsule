@@ -1,17 +1,31 @@
 package org.mogara.sunny.timecapsule;
 
+import android.content.Context;
+import android.content.Intent;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.app.Activity;
+import android.media.Image;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.TextView;
 
 import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
@@ -22,9 +36,11 @@ import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
+import com.baidu.mapapi.map.MapStatus;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.Marker;
 import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
@@ -34,6 +50,7 @@ import com.baidu.mapapi.model.LatLng;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.util.List;
 
 public class MainActivity extends Activity {
@@ -53,10 +70,15 @@ public class MainActivity extends Activity {
 
     private String audioFilePath = null;
 
+    private ImageButton recordButton = null;
+
+    private String imageFilePath = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         SDKInitializer.initialize(getApplicationContext());
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
 
         mapView = (MapView) findViewById(R.id.bmapView);
@@ -70,23 +92,27 @@ public class MainActivity extends Activity {
         mLocationClient.start();
 
         BitmapDescriptor currentMarker = BitmapDescriptorFactory
-                .fromResource(R.mipmap.ic_launcher);
+                .fromResource(R.mipmap.my_location);
         MyLocationConfiguration config = new MyLocationConfiguration(MyLocationConfiguration.LocationMode.NORMAL,
                 true, currentMarker);
         baiduMap.setMyLocationConfigeration(config);
 
         bitmapDescriptor = BitmapDescriptorFactory
-                .fromResource(R.mipmap.ic_launcher);
+                .fromResource(R.mipmap.locator);
 
         audioFilePath = Environment.getExternalStorageDirectory().getAbsolutePath();
         audioFilePath += "/test.3gp";
 
-        Button recordButton = (Button) findViewById(R.id.record);
+        imageFilePath = Environment.getExternalStorageDirectory().getAbsolutePath();
+        imageFilePath += "/test.jpg";
+
+        recordButton = (ImageButton) findViewById(R.id.record);
 
         recordButton.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                    recordButton.setBackgroundColor(getResources().getColor(R.color.transparent_white));
                     mediaRecorder = new MediaRecorder();
                     mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
                     mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
@@ -99,39 +125,121 @@ public class MainActivity extends Activity {
                         Log.e("Record", e.toString());
                     }
                 } else if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
+                    recordButton.setBackgroundColor(getResources().getColor(R.color.transparent));
                     mediaRecorder.stop();
                     mediaRecorder.release();
                     MapDB.postAudio(mLocationClient.getLastKnownLocation(), audioFilePath);
                     mediaRecorder = null;
+
+                    refreshNearbyPosts(mLocationClient.getLastKnownLocation());
                 }
                 return false;
             }
         });
 
-        Button playButton = (Button) findViewById(R.id.play);
-        playButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mediaPlayer = new MediaPlayer();
-                mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                    @Override
-                    public void onCompletion(MediaPlayer mediaPlayer) {
-                        mediaPlayer.release();
-                        mediaPlayer = null;
+//        ImageButton playButton = (ImageButton) findViewById(R.id.play);
+//        playButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                mediaPlayer = new MediaPlayer();
+//                mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+//                    @Override
+//                    public void onCompletion(MediaPlayer mediaPlayer) {
+//                        mediaPlayer.release();
+//                        mediaPlayer = null;
+//                    }
+//                });
+//
+//                try {
+//
+//                    mediaPlayer.setDataSource(FileServer.BASIC_URL + "data/1552873883.3gp");
+//                    mediaPlayer.prepare();
+//                    mediaPlayer.start();
+//                } catch (Exception e) {
+//                    Log.e("Play", e.toString());
+//                }
+//            }
+//        });
+
+        SensorManager manager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        if (manager.getSensorList(Sensor.TYPE_ORIENTATION).size() == 0) {
+            Log.e("ROTATION", "NO SENSOR");
+        } else {
+            Sensor compass = manager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
+            manager.registerListener(new SensorEventListener() {
+                @Override
+                public void onSensorChanged(SensorEvent sensorEvent) {
+                    BDLocation location = mLocationClient.getLastKnownLocation();
+                    if (location != null) {
+                        float yaw = sensorEvent.values[0];
+                        MyLocationData locData = new MyLocationData.Builder()
+                                .accuracy(location.getRadius())
+                                .direction(yaw)
+                                        // 此处设置开发者获取到的方向信息，顺时针0-360
+                                .latitude(location.getLatitude())
+                                .longitude(location.getLongitude()).build();
+// 设置定位数据
+                        baiduMap.setMyLocationData(locData);
                     }
-                });
-
-                try {
-
-                    mediaPlayer.setDataSource(FileServer.BASIC_URL + "data/1552873883.3gp");
-                    mediaPlayer.prepare();
-                    mediaPlayer.start();
-                } catch (Exception e) {
-                    Log.e("Play", e.toString());
                 }
+
+                @Override
+                public void onAccuracyChanged(Sensor sensor, int i) {
+
+                }
+            }, compass, SensorManager.SENSOR_DELAY_FASTEST);
+        }
+
+        // 开启定位图层
+        baiduMap.setMyLocationEnabled(true);
+
+        EditText input = (EditText) findViewById(R.id.input);
+        input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                if (textView.getText().toString().isEmpty()) {
+                    textView.setText(new String());
+                    return false;
+                }
+                MapDB.postTextAndImage(mLocationClient.getLastKnownLocation(),
+                        textView.getText().toString(), null);
+
+                textView.setText(new String());
+
+                refreshNearbyPosts(mLocationClient.getLastKnownLocation());
+                return true;
             }
         });
 
+        ImageButton cameraButton = (ImageButton) findViewById(R.id.camera);
+        cameraButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                File output = new File(imageFilePath);
+                try {
+                    if (output.exists()) {
+                        output.delete();
+                    }
+                    output.createNewFile();
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                Uri imageUri = Uri.fromFile(output);
+                Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+                startActivityForResult(intent, 1);
+            }
+        });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == RESULT_OK) {
+            MapDB.postTextAndImage(mLocationClient.getLastKnownLocation(), null, imageFilePath);
+            refreshNearbyPosts(mLocationClient.getLastKnownLocation());
+        }
     }
 
     @Override
@@ -181,7 +289,7 @@ public class MainActivity extends Activity {
         option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy
         );//可选，默认高精度，设置定位模式，高精度，低功耗，仅设备
         option.setCoorType("bd09ll");//可选，默认gcj02，设置返回的定位结果坐标系
-        int span=10000;
+        int span=1000;
         option.setScanSpan(span);//可选，默认0，即仅定位一次，设置发起定位请求的间隔需要大于等于1000ms才是有效的
         option.setIsNeedAddress(true);//可选，设置是否需要地址信息，默认不需要
         option.setOpenGps(true);//可选，默认false,设置是否使用gps
@@ -204,45 +312,15 @@ public class MainActivity extends Activity {
 //
 //            baiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(mapStatus));
 
-            // 开启定位图层
-            baiduMap.setMyLocationEnabled(true);
-// 构造定位数据
-            MyLocationData locData = new MyLocationData.Builder()
-                    .accuracy(location.getRadius())
-                            // 此处设置开发者获取到的方向信息，顺时针0-360
-                    .direction(100).latitude(location.getLatitude())
-                    .longitude(location.getLongitude()).build();
-// 设置定位数据
-            baiduMap.setMyLocationData(locData);
-// 设置定位图层的配置（定位模式，是否允许方向信息，用户自定义定位图标）
-
-            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-//            MapStatus mapStatus = new MapStatus.Builder().target(latLng).build();
-            MapStatusUpdate mapStatusUpdate = MapStatusUpdateFactory.newLatLng(latLng);
-            baiduMap.setMapStatus(mapStatusUpdate);
-
             if (location != null && mLocation == null) {
-                MapDB.getNearbyPosts(location, new RowQueryListener() {
-                    @Override
-                    public void onGet(String response) {
-                        try {
-                            JSONObject object = new JSONObject(response);
-                            JSONArray contents = object.getJSONArray("contents");
-                            for (int i = 0; i < contents.length(); ++i) {
-                                JSONObject poi = contents.getJSONObject(i);
-                                JSONArray location = poi.getJSONArray("location");
-                                LatLng point = new LatLng(location.getDouble(1), location.getDouble(0));
-                                OverlayOptions option = new MarkerOptions()
-                                        .position(point)
-                                        .icon(bitmapDescriptor);
-                                baiduMap.addOverlay(option);
-                            }
-                        } catch (Exception e) {
-
-                        }
-                    }
-                });
+                refreshNearbyPosts(location);
                 mLocation = location;
+
+                LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                MapStatus mapStatus = new MapStatus.Builder().target(latLng).zoom(16).build();
+                MapStatusUpdate mapStatusUpdate = MapStatusUpdateFactory.newMapStatus(mapStatus);
+
+                baiduMap.setMapStatus(mapStatusUpdate);
             }
 
                                 //Receive Location
@@ -305,5 +383,36 @@ public class MainActivity extends Activity {
             }
             Log.i("BaiduLocationApiDem", sb.toString());
         }
+    }
+
+    private void refreshNearbyPosts(BDLocation location) {
+        MapDB.getNearbyPosts(location, new RowQueryListener() {
+            @Override
+            public void onGet(String response) {
+                try {
+                    JSONObject object = new JSONObject(response);
+                    JSONArray contents = object.getJSONArray("contents");
+                    for (int i = 0; i < contents.length(); ++i) {
+                        JSONObject poi = contents.getJSONObject(i);
+                        JSONArray location = poi.getJSONArray("location");
+                        LatLng point = new LatLng(location.getDouble(1), location.getDouble(0));
+                        OverlayOptions option = new MarkerOptions()
+                                .position(point)
+                                .icon(bitmapDescriptor);
+                        baiduMap.addOverlay(option);
+                    }
+
+                    baiduMap.setOnMarkerClickListener(new BaiduMap.OnMarkerClickListener() {
+                        @Override
+                        public boolean onMarkerClick(Marker marker) {
+                            Log.w("Marker Clicked", marker.getPosition().toString());
+                            return false;
+                        }
+                    });
+                } catch (Exception e) {
+
+                }
+            }
+        });
     }
 }

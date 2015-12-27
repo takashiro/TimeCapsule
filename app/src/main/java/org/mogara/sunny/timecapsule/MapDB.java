@@ -33,13 +33,12 @@ public class MapDB {
 
     private static final String TYPE_AUDIO = "2";
 
-    public static void postTextAndImage(BDLocation location, final String text, final String fileName) {
-        post(location, TYPE_MESSAGE, text, fileName);
+    public static void postTextAndImage(BDLocation location, final String text, final String path) {
+        post(location, TYPE_MESSAGE, text, path);
     }
 
     public static void postAudio(final BDLocation location, final String path) {
         post(location, TYPE_AUDIO, null, path);
-        //@TODO upload file
     }
 
     private static void post(final BDLocation location, final String type,
@@ -70,7 +69,9 @@ public class MapDB {
                     int id = object.getInt("id");
 
                     File file = new File(path);
+                    Log.w("ImagePath", path);
                     if (file.exists()) {
+                        Log.w("Image", "666");
                         InputStream in = new BufferedInputStream(new FileInputStream(file));
                         FileServer.upload(id + getExtensionName(path), in);
                     }
