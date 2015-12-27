@@ -1,6 +1,7 @@
 package org.mogara.sunny.timecapsule;
 
 import android.content.Context;
+import android.content.Intent;
 import android.database.DataSetObserver;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -9,6 +10,8 @@ import android.os.Bundle;
 import android.app.Activity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
@@ -42,6 +45,23 @@ public class PostListActivity extends Activity {
 
         ListView view = (ListView) findViewById(R.id.post_list_view);
         view.setAdapter(adapter);
+
+        ImageButton backButton = (ImageButton) findViewById(R.id.backButton);
+        backButton.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+
+        ImageButton addButton = (ImageButton) findViewById(R.id.addPostButton);
+        addButton.setOnClickListener(new Button.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(PostListActivity.this, MainActivity.class);
+                startActivity(intent);
+            }
+        });
     }
 
     protected List<Map<String, Object>> getData() {
